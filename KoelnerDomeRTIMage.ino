@@ -1,6 +1,6 @@
 /* 
 RTI-Mage Main Control: Controls lights and camera shutter on RTI-Mage control box to acquire full RTI dataset.
-Version 3.1
+Version 3.11
 10/20/2016
 Adds mouse commands to Adafruit Bluetooth HID adapter for shutter control with computer
 
@@ -65,22 +65,22 @@ if any of them are changed. They're used to set the Arduino pin numbers for inpu
 const int LED_Pin = A7; //Controls amount of LED on time after shutter is activated. Left knob
 const int Photo_Data_Pin=A8; //Controls amount of time LED is off before next picture, for camera to save data. Right knob
 const int Beeper_Pin=25; //Direct connection to beeper
-const int USB_Camera_Pin=23;  //pin number for voltage to camera USB/IR trigger
+const int USB_Camera_Pin=13;  //pin number for voltage to camera USB/IR trigger (vorher D23)
 const int Servo_Pin=27;  //Controls servo shutter
 const int Bluetooth_Tx = 69; //For Bluetooth HID (Pin A15)
-const int Bluetooth_Rx = 68; //For Bluetooth HID (Pin A14
+const int Bluetooth_Rx = 68; //For Bluetooth HID (Pin A14)
 const int Action_Pin=A11; //The number of the action button pin (A13)
 const int White_Balance_Pin=A10; //The number of the white balance pin (A12)
 const int Shutter_Switch_Pin=7; //Switch pin to go from USB shutter control to IR shutter control
-const int Auto_Switch_Pin=6; // the number for the switch pin to go from manual (off) to auto (on)
+const int Auto_Switch_Pin=48; // the number for the switch pin to go from manual (off) to auto (on) (vorher D6)
 const int Beeper_Control_Pin=3; //Connects to switch that enables/disables beeper
 const int Source_Pin=30; //First pin to P-Channel MOSFETs (Columns)
 const int Sink_Pin=31; //First pin to CAT4101s (Rows)
 const int Bounce_Time=250; //min delay time after button is depressed, to work around debounce issues; set this to no less than 250
 
 //Following are constants for the OLED display
-String Software_version="1.61";
-String Software_date="26/05/2024";
+String Software_version="3.11";
+String Software_date="10/06/2024";
 String Current_setting="700mA"; //This must be set here - the system has no way to determine the actual output current, which is set manually.
 
 /*Following constants can be adjusted to set camera times and other parameters. Maximum value for unsigned int constants is 65535 (bit more than a minute);
@@ -128,10 +128,10 @@ String Camera_type="Nikon";
 SoftwareSerial BT = SoftwareSerial(Bluetooth_Rx, Bluetooth_Tx); //Pin A15 is digital 69 Tx, Pin A14 is digital 68 Rx. BT is the output to the Bluetooth module.
 
 // Tastendefinitionen (uh)
-const int buttonPin_Taste1_up = 4;    // Taster1: up, Einstellung Zeit "LED"
-const int buttonPin_Taste1_down = 5;  // Taster1:down
-const int buttonPin_Taste2_up = 2;    // Taster2: up, Einstellung Zeit "DEL"
-const int buttonPin_Taste2_down = 3;  // Taster2:down
+const int buttonPin_Taste1_up = 3;    // Taster1: up, Einstellung Zeit "LED" (vorher D4)
+const int buttonPin_Taste1_down = 2;  // Taster1:down (vorher D5)
+const int buttonPin_Taste2_up = 18;    // Taster2: up, Einstellung Zeit "DEL" (vorher D2)
+const int buttonPin_Taste2_down = 17;  // Taster2:down (vorher D3)
 
 int buttonState_Taste1_up;    // the current reading from the input pin
 int buttonState_Taste1_down;  // the current reading from the input pin
@@ -166,8 +166,8 @@ int level1 = 0;               // Einschaltzeit LED
 const int analogInPin8 = A8;  // AD_Input A8
 int level2 = 0;               // Pausenzeit LED
 
-const int write_protection = 46;  // /Write MCP4241
-const int slave_Select_Pin = 53;  // /Chip Select MCP4241
+const int write_protection = 15;  // /Write MCP4241 (vorher D46)
+const int slave_Select_Pin = 1;   // /Chip Select MCP4241 (vorher D53)
 int volatile value_on = 0;        // Einschaltzeit LED
 int value_off = 0;                // Pausenzeit LED
 byte miso_data = 0;
@@ -204,9 +204,9 @@ void setup() { //INPUT_PULLUP means high is "off", and eliminates need for pulld
   // Konfiguration fuer MCP4241 (uh)
   pinMode(write_protection, OUTPUT); //WR
   pinMode(slave_Select_Pin, OUTPUT); //CS
-  pinMode(51, OUTPUT);  // SI MCP4241
-  pinMode(52, OUTPUT);  // SCK MCP4241
-  pinMode(50, INPUT);   // SDO MCP4241
+  pinMode(14, OUTPUT);  // SI MCP4241 (vorher D51)
+  pinMode(0, OUTPUT);  // SCK MCP4241 (vorher D52)
+  pinMode(16, INPUT);   // SDO MCP4241 (vorher D50)
 
   // initialize SPI (uh)
   SPI.begin();
