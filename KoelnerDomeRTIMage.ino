@@ -1,6 +1,6 @@
 /* 
 RTI-Mage Main Control: Controls lights and camera shutter on RTI-Mage control box to acquire full RTI dataset.
-Version 3.11
+Version 3.12
 10/20/2016
 Adds mouse commands to Adafruit Bluetooth HID adapter for shutter control with computer
 
@@ -79,8 +79,8 @@ const int Sink_Pin=31; //First pin to CAT4101s (Rows)
 const int Bounce_Time=250; //min delay time after button is depressed, to work around debounce issues; set this to no less than 250
 
 //Following are constants for the OLED display
-String Software_version="3.11";
-String Software_date="10/06/2024";
+String Software_version="3.12";
+String Software_date="12/06/2024";
 String Current_setting="700mA"; //This must be set here - the system has no way to determine the actual output current, which is set manually.
 
 /*Following constants can be adjusted to set camera times and other parameters. Maximum value for unsigned int constants is 65535 (bit more than a minute);
@@ -204,8 +204,8 @@ void setup() { //INPUT_PULLUP means high is "off", and eliminates need for pulld
   // Konfiguration fuer MCP4241 (uh)
   pinMode(write_protection, OUTPUT); //WR
   pinMode(slave_Select_Pin, OUTPUT); //CS
-  pinMode(14, OUTPUT);  // SI MCP4241 (vorher D51)
-  pinMode(0, OUTPUT);  // SCK MCP4241 (vorher D52)
+  pinMode(51, OUTPUT);  // SI MCP4241 (vorher D51, dann 14 und wieder zurück)
+  pinMode(52, OUTPUT);  // SCK MCP4241 (vorher D52, dann 0 und wieder zurück)
   pinMode(16, INPUT);   // SDO MCP4241 (vorher D50)
 
   // initialize SPI (uh)
