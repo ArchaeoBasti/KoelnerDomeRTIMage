@@ -1,40 +1,18 @@
 /* 
 RTI-Mage Main Control: Controls lights and camera shutter on RTI-Mage control box to acquire full RTI dataset.
-Version 3.12
-10/20/2016
 Adds mouse commands to Adafruit Bluetooth HID adapter for shutter control with computer
 
 Copyright (C) 2016  Leszek Pawlowicz leszekmp@gmail.com
 See the Hackaday.io project page for more info. https://hackaday.io/project/11951-affordable-reflectance-transformation-imaging-dome
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License version 2.0
-as published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 2.0 as published by the Free Software Foundation.
 
-This program is distributed in the hope that it will be useful, 
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-This software has been modified under the terms of the GNU General Public License Version 2.0
-by Sebastian Hageneuer - http://koelner-dome.de/ in order to fit the needs of the provided hardware.
-The changes to the software are noted here, down below:
-15/09/2021: Added the subroutine Auto_mode_HeatSufficient() in order to provide a more heat sufficuent
-method of ligthing up the LEDs without draining either the Mosfets no the LED drivers for a full circle.
-Removed unnesessary functions.
-07/02/2022: Changed display to Adafruit 177TFT
-
-This software has been modified under the terms of the GNU General Public License Version 2.0
-by Uwe Heinemann. 
-The changes to the software are noted here, down below:
-23.05.2024: MCP4241
-Controller: MEGA2650 R3
-Taste1_up, Taste1_down: LED
-Taste2_up, Taste2_down: DEL
+This software has been modified under the terms of the GNU General Public License Version 2.0 by Sebastian Hageneuer - http://koelner-dome.de/ with contributions of Uwe Heinemann in order to fit the needs of the provided hardware.
+The changes to the software can be read in the REadme of the GitHub repository: https://github.com/ArchaeoBasti/KoelnerDomeRTIMage
 */
 
 #include <multiCameraIrControl.h> //Sebastian Setz's library for IR shutter control; http://sebastian.setz.name/arduino/my-libraries/multi-camera-ir-control/
@@ -65,7 +43,7 @@ if any of them are changed. They're used to set the Arduino pin numbers for inpu
 const int LED_Pin = A7; //Controls amount of LED on time after shutter is activated. Left knob
 const int Photo_Data_Pin=A8; //Controls amount of time LED is off before next picture, for camera to save data. Right knob
 const int Beeper_Pin=25; //Direct connection to beeper
-const int USB_Camera_Pin=13;  //pin number for voltage to camera USB/IR trigger (vorher D23)
+const int USB_Camera_Pin=23;  //pin number for voltage to camera USB/IR trigger
 const int Servo_Pin=27;  //Controls servo shutter
 const int Bluetooth_Tx = 69; //For Bluetooth HID (Pin A15)
 const int Bluetooth_Rx = 68; //For Bluetooth HID (Pin A14)
@@ -79,8 +57,8 @@ const int Sink_Pin=31; //First pin to CAT4101s (Rows)
 const int Bounce_Time=250; //min delay time after button is depressed, to work around debounce issues; set this to no less than 250
 
 //Following are constants for the OLED display
-String Software_version="3.12";
-String Software_date="12/06/2024";
+String Software_version="3.13";
+String Software_date="11.09.2024";
 String Current_setting="700mA"; //This must be set here - the system has no way to determine the actual output current, which is set manually.
 
 /*Following constants can be adjusted to set camera times and other parameters. Maximum value for unsigned int constants is 65535 (bit more than a minute);
