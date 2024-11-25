@@ -42,23 +42,23 @@ if any of them are changed. They're used to set the Arduino pin numbers for inpu
 */
 const int LED_Pin = A7; //Controls amount of LED on time after shutter is activated. Left knob
 const int Photo_Data_Pin=A8; //Controls amount of time LED is off before next picture, for camera to save data. Right knob
-const int Beeper_Pin=25; //Direct connection to beeper
-const int USB_Camera_Pin=23;  //pin number for voltage to camera USB/IR trigger
+//const int Beeper_Pin=25; //Direct connection to beeper
+const int USB_Camera_Pin=19;  //pin number for voltage to camera USB/IR trigger
 const int Servo_Pin=27;  //Controls servo shutter
 const int Bluetooth_Tx = 69; //For Bluetooth HID (Pin A15)
 const int Bluetooth_Rx = 68; //For Bluetooth HID (Pin A14)
-const int Action_Pin=A11; //The number of the action button pin (A13)
-const int White_Balance_Pin=A10; //The number of the white balance pin (A12)
+const int Action_Pin=A3; //The number of the action button pin (A13)
+const int White_Balance_Pin=A2; //The number of the white balance pin (A12)
 const int Shutter_Switch_Pin=7; //Switch pin to go from USB shutter control to IR shutter control
-const int Auto_Switch_Pin=48; // the number for the switch pin to go from manual (off) to auto (on) (vorher D6)
-const int Beeper_Control_Pin=3; //Connects to switch that enables/disables beeper
+const int Auto_Switch_Pin=6; // the number for the switch pin to go from manual (off) to auto (on) (vorher D6)
+//const int Beeper_Control_Pin=3; //Connects to switch that enables/disables beeper
 const int Source_Pin=30; //First pin to P-Channel MOSFETs (Columns)
 const int Sink_Pin=31; //First pin to CAT4101s (Rows)
 const int Bounce_Time=250; //min delay time after button is depressed, to work around debounce issues; set this to no less than 250
 
 //Following are constants for the OLED display
-String Software_version="3.13";
-String Software_date="11.09.2024";
+String Software_version="3.14";
+String Software_date="25.11.2024";
 String Current_setting="700mA"; //This must be set here - the system has no way to determine the actual output current, which is set manually.
 
 /*Following constants can be adjusted to set camera times and other parameters. Maximum value for unsigned int constants is 65535 (bit more than a minute);
@@ -161,9 +161,9 @@ void setup() { //INPUT_PULLUP means high is "off", and eliminates need for pulld
   pinMode(Action_Pin, INPUT_PULLUP); //Right button; starts sequence, also switches rows for white balance
   pinMode(Auto_Switch_Pin, INPUT_PULLUP); //Toggle switch to choose Auto to Manual
   pinMode(Shutter_Switch_Pin,INPUT_PULLUP); //Toggle switch to select CHDK or IR/Bluetooth output
-  pinMode(Beeper_Control_Pin,INPUT_PULLUP); //Toggle switch to turn beeper on/off
+  //pinMode(Beeper_Control_Pin,INPUT_PULLUP); //Toggle switch to turn beeper on/off
   pinMode(USB_Camera_Pin,OUTPUT); //Cable output to control CHDK, IR/remote/Bluetooth HID
-  pinMode(Beeper_Pin,OUTPUT); //Audio output control
+  //pinMode(Beeper_Pin,OUTPUT); //Audio output control
     for (int x=0; x < Columns; x++) {
     pinMode(Source_Pin+x*2,OUTPUT);
     digitalWrite(Source_Pin+x*2,LOW);} //Set P MOSFET pins output mode, low
@@ -564,7 +564,7 @@ void Display_Standby_Screen() {  //Shows standby OLED screen
     tft.print("Manual");
   } else {
     tft.setCursor(60,40);
-    tft.print("Auto");
+    tft.print("Auto  ");
     if (digitalRead(Shutter_Switch_Pin)==HIGH) {
       tft.setCursor(60,50);
       tft.print("IR/Bluetooth");
