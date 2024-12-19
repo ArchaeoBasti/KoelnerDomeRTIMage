@@ -7,7 +7,7 @@ This software has been modified under the terms of the GNU General Public Licens
 by Sebastian Hageneuer - http://koelner-dome.de/ and Uwe Heinemann in order to fit the needs of the provided hardware.
 
 v3.13:	New PCB Board design needed some adaptations in pin assignment
-v3.12:  As the OLED was not working with the changed pins, we switched them back to the original setting of 51, 52  
+v3.12:  As the OLED was not working with the changed pins, we switched them back to the original setting of 51, 52
 v3.11:  Changed Pins to adapt to new PCB design  
 v3.1:   Adaptations for electric potentiometer  
 v3.01:  Smaller adaptations  
