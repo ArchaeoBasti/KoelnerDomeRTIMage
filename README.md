@@ -9,12 +9,12 @@ by Sebastian Hageneuer - http://koelner-dome.de/ and Uwe Heinemann in order to f
 v3.13:	New PCB Board design needed some adaptations in pin assignment\
 v3.12:  As the OLED was not working with the changed pins, we switched them back to the original setting of 51, 52\
 v3.11:  Changed Pins to adapt to new PCB design\
-v3.1:   Adaptations for electric potentiometer  
-v3.01:  Smaller adaptations  
-v3.0:   Adapted for bigger OLED screen  
-v2.1:   Smaller adaptations  
-v2.0:   Adapted for bigger OLED screen  
-v1.53:  Smaller adaptations  
-v1.52:  Smaller adaptations  
-v1.51:  Added Bluetooth_Shutter subroutine; added left-mouse-click; Fixed default rows/columns setting  
-v1.5:   Adaptation of Leszek Pawlowicz's RTI-Mage software to the needs of the Koelner Dome Project  
+v3.1:   Adaptations for electric potentiometer\
+v3.01:  Smaller adaptations\
+v3.0:   Adapted for bigger OLED screen\
+v2.1:   Smaller adaptations\
+v2.0:   Adapted for bigger OLED screen\
+v1.53:  Smaller adaptations\
+v1.52:  Smaller adaptations\ 
+v1.51:  Added Bluetooth_Shutter subroutine; added left-mouse-click; Fixed default rows/columns setting\
+v1.5:   Adaptation of Leszek Pawlowicz's RTI-Mage software to the needs of the Koelner Dome Project
