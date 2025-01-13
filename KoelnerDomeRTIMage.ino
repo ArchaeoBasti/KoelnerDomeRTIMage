@@ -1,4 +1,4 @@
-/* 
+/*
 RTI-Mage Main Control: Controls lights and camera shutter on RTI-Mage control box to acquire full RTI dataset.
 Adds mouse commands to Adafruit Bluetooth HID adapter for shutter control with computer
 
@@ -43,22 +43,22 @@ if any of them are changed. They're used to set the Arduino pin numbers for inpu
 const int LED_Pin = A7; //Controls amount of LED on time after shutter is activated. Left knob
 const int Photo_Data_Pin=A8; //Controls amount of time LED is off before next picture, for camera to save data. Right knob
 //const int Beeper_Pin=25; //Direct connection to beeper
-const int USB_Camera_Pin=19;  //pin number for voltage to camera USB/IR trigger
+const int USB_Camera_Pin=19;  //pin number for voltage to camera USB/IR trigger (vorher D23)
 const int Servo_Pin=27;  //Controls servo shutter
 const int Bluetooth_Tx = 69; //For Bluetooth HID (Pin A15)
 const int Bluetooth_Rx = 68; //For Bluetooth HID (Pin A14)
-const int Action_Pin=A3; //The number of the action button pin (A13)
-const int White_Balance_Pin=A2; //The number of the white balance pin (A12)
+const int Action_Pin=A3; //The number of the action button pin vorher(A13), dann (A11)
+const int White_Balance_Pin=A2; //The number of the white balance pin vorher (A12), dann (A10)
 const int Shutter_Switch_Pin=7; //Switch pin to go from USB shutter control to IR shutter control
-const int Auto_Switch_Pin=6; // the number for the switch pin to go from manual (off) to auto (on) (vorher D6)
+const int Auto_Switch_Pin=6; // the number for the switch pin to go from manual (off) to auto (on) (vorher D6 danach D48 und wieder zurück)
 //const int Beeper_Control_Pin=3; //Connects to switch that enables/disables beeper
 const int Source_Pin=30; //First pin to P-Channel MOSFETs (Columns)
 const int Sink_Pin=31; //First pin to CAT4101s (Rows)
 const int Bounce_Time=250; //min delay time after button is depressed, to work around debounce issues; set this to no less than 250
 
 //Following are constants for the OLED display
-String Software_version="3.14";
-String Software_date="25.11.2024";
+String Software_version="3.15";
+String Software_date="09.12.2024";
 String Current_setting="700mA"; //This must be set here - the system has no way to determine the actual output current, which is set manually.
 
 /*Following constants can be adjusted to set camera times and other parameters. Maximum value for unsigned int constants is 65535 (bit more than a minute);
@@ -106,10 +106,10 @@ String Camera_type="Nikon";
 SoftwareSerial BT = SoftwareSerial(Bluetooth_Rx, Bluetooth_Tx); //Pin A15 is digital 69 Tx, Pin A14 is digital 68 Rx. BT is the output to the Bluetooth module.
 
 // Tastendefinitionen (uh)
-const int buttonPin_Taste1_up = 3;    // Taster1: up, Einstellung Zeit "LED" (vorher D4)
-const int buttonPin_Taste1_down = 2;  // Taster1:down (vorher D5)
-const int buttonPin_Taste2_up = 18;    // Taster2: up, Einstellung Zeit "DEL" (vorher D2)
-const int buttonPin_Taste2_down = 17;  // Taster2:down (vorher D3)
+const int buttonPin_Taste1_up = 18;    // Taster1: up, Einstellung Zeit "LED" (vorher D4)
+const int buttonPin_Taste1_down = 17;  // Taster1:down (vorher D5)
+const int buttonPin_Taste2_up = 3;    // Taster2: up, Einstellung Zeit "DEL" (vorher D2)
+const int buttonPin_Taste2_down = 2;  // Taster2:down (vorher D3)
 
 int buttonState_Taste1_up;    // the current reading from the input pin
 int buttonState_Taste1_down;  // the current reading from the input pin
@@ -138,18 +138,23 @@ int status_Taste2_down = 0;
 
 // Einstellungen analoge Eingänge A7, A8
 
-const int analogInPin7 = A7;  // AD_Input A7 
+const int analogInPin7 = A7;  // AD_Input A7
 int level1 = 0;               // Einschaltzeit LED
 
 const int analogInPin8 = A8;  // AD_Input A8
 int level2 = 0;               // Pausenzeit LED
 
-const int write_protection = 15;  // /Write MCP4241 (vorher D46)
-const int slave_Select_Pin = 1;   // /Chip Select MCP4241 (vorher D53)
-int volatile value_on = 0;        // Einschaltzeit LED
-int value_off = 0;                // Pausenzeit LED
-byte miso_data = 0;
+//const int write_protection = 15;  // /Write MCP4241 (vorher D46)
+//const int slave_Select_Pin = 1;   // /Chip Select MCP4241 (vorher D53)
 
+const int write_protection = 46;  // /Write MCP4241 (vorher D46)
+const int slave_Select_Pin = 53;   // /Chip Select MCP4241 (vorher D53)
+int volatile value_on = 0;        // Einschaltzeit LED
+int volatile value_off = 0;       // Auschaltzeit DEL
+
+byte miso_data = 0;
+byte status_reg05 = 0;
+int pot = 0;    //Anzeige AD_Channel (A7, A8) im seriellen Monitor
 
 //--------------------------------------------------------------------------------------------------
 
@@ -161,9 +166,9 @@ void setup() { //INPUT_PULLUP means high is "off", and eliminates need for pulld
   pinMode(Action_Pin, INPUT_PULLUP); //Right button; starts sequence, also switches rows for white balance
   pinMode(Auto_Switch_Pin, INPUT_PULLUP); //Toggle switch to choose Auto to Manual
   pinMode(Shutter_Switch_Pin,INPUT_PULLUP); //Toggle switch to select CHDK or IR/Bluetooth output
-  //pinMode(Beeper_Control_Pin,INPUT_PULLUP); //Toggle switch to turn beeper on/off
+//  pinMode(Beeper_Control_Pin,INPUT_PULLUP); //Toggle switch to turn beeper on/off
   pinMode(USB_Camera_Pin,OUTPUT); //Cable output to control CHDK, IR/remote/Bluetooth HID
-  //pinMode(Beeper_Pin,OUTPUT); //Audio output control
+//  pinMode(Beeper_Pin,OUTPUT); //Audio output control
     for (int x=0; x < Columns; x++) {
     pinMode(Source_Pin+x*2,OUTPUT);
     digitalWrite(Source_Pin+x*2,LOW);} //Set P MOSFET pins output mode, low
@@ -174,9 +179,9 @@ void setup() { //INPUT_PULLUP means high is "off", and eliminates need for pulld
   digitalWrite(13,LOW); // Turn off on-board LED
 
   // Konfiguration Tasten (uh)
-  pinMode(buttonPin_Taste1_up, INPUT_PULLUP);    //Tasten für manuelle Bedienung
-  pinMode(buttonPin_Taste1_down, INPUT_PULLUP);  // interner Pull-UP ein
-  pinMode(buttonPin_Taste2_up, INPUT_PULLUP);
+  pinMode(buttonPin_Taste1_up, INPUT_PULLUP);    //Taste für Einschaltzeit LED (up, down)
+  pinMode(buttonPin_Taste1_down, INPUT_PULLUP);
+  pinMode(buttonPin_Taste2_up, INPUT_PULLUP);    //Taste für Ausschaltzeit DEL (up, down)
   pinMode(buttonPin_Taste2_down, INPUT_PULLUP);
 
   // Konfiguration fuer MCP4241 (uh)
@@ -184,38 +189,45 @@ void setup() { //INPUT_PULLUP means high is "off", and eliminates need for pulld
   pinMode(slave_Select_Pin, OUTPUT); //CS
   pinMode(51, OUTPUT);  // SI MCP4241 (vorher D51, dann 14 und wieder zurück)
   pinMode(52, OUTPUT);  // SCK MCP4241 (vorher D52, dann 0 und wieder zurück)
-  pinMode(16, INPUT);   // SDO MCP4241 (vorher D50)
+  pinMode(50, INPUT_PULLUP); // SDO MCP4241 (vorher 16)
+
 
   // initialize SPI (uh)
-  SPI.begin();
+  SPI.beginTransaction(SPISettings(1400000, MSBFIRST, SPI_MODE0));
+
+  digitalWrite(write_protection, HIGH);
 
   // Register TCON write
   // SDO = 0xFF, 0xFF
   digitalWrite(slave_Select_Pin, LOW);
   SPI.transfer(B01000000); //TCON write (CMD: 0x04)
-  SPI.transfer(B11111111); //Anschlüsse Pot0, Pot1 Konfiguration,  
+  SPI.transfer(B11111111); //Anschlüsse Pot0, Pot1 Konfiguration,
                            // DS22059B-page 34
+  spi_read(B00000101);
+  status_reg05 = miso_data;
+  Serial.println(miso_data);
+
   digitalWrite(slave_Select_Pin, HIGH);
 
   //NV Wiper 0 read
-  spi_read(B00101100);
+  spi_read(B00101100);  // Salae Logic 2, Session 0
   value_on = miso_data; //Speicherwert NV Wiper 0 aus EEPROM holen
   Serial.print("value_on: ");
   Serial.println(miso_data);
-  
-  digitalWrite(slave_Select_Pin, LOW);
+
+  digitalWrite(slave_Select_Pin, LOW);  // Salae Logic 2, Session 1
   SPI.transfer(B00000000); //Volatile Wiper 0 write
   SPI.transfer(miso_data);
   digitalWrite(slave_Select_Pin, HIGH);
-  
+
   //NV Wiper 1 read
   spi_read(B00111100);
   value_off = miso_data;  //Speicherwert NV Wiper 1 aus EEPROM holen
 
-  digitalWrite(slave_Select_Pin, LOW);
+  digitalWrite(slave_Select_Pin, LOW); // Salae Logic 2, Session 2
   SPI.transfer(B00010000); //Volatile Wiper 1 write
   SPI.transfer(miso_data);
-  digitalWrite(slave_Select_Pin, HIGH);  
+  digitalWrite(slave_Select_Pin, HIGH);
 
   digitalWrite(write_protection, LOW); //Write-Protect einschalten
 
@@ -224,6 +236,24 @@ void setup() { //INPUT_PULLUP means high is "off", and eliminates need for pulld
   Display_Intro_Text();
   Build_Standby_Screen();
 }
+
+// Zuordnung AD-Channels:
+// A7: Einschaltzeit LED, Taste_1_up = 18, Taste_1_down = 17, MCP4241:PW1
+// A8: Pausenzeit DEL, Taste_2_up = 3, Taste_2_down = 2, MCP4241:PW0
+
+// Zuordnung Bilder SPI-Bus MCP4241 mit Salae Logic 2
+// Salae Logic 2, Session 3: Taste2_up (erste Betätigung)
+// Salae Logic 2, Session 4: zweite Betätigung Taste2_up
+
+// Salae Logic 2, Session 5: Taste2_down (erste Betätigung)
+// Salae Logic 2, Session 6: zweite Betätigung Taste2_down
+
+// Salae Logic 2, Session 7: Taste1_up (erste Betätigung)
+// Salae Logic 2, Session 8: zweite Betätigung Taste1_up
+
+// Salae Logic 2, Session 9: Taste1_down (erste Betätigung)
+// Salae Logic 2, Session 10: zweite Betätigung Taste1_down
+
 
 //---------------------------------------------------------------------------------------------
 
@@ -626,7 +656,8 @@ void Display_Auto_Screen() {  //Shows OLED screen in Automatic Mode
   tft.setCursor(60,105);
   tft.print(Data_Transfer_string + "s");
 
-  delay(999);
+  //delay(999);
+  delay(100);
 }
 
 //---------------------------------------------------------------------------------------------------------------
@@ -663,25 +694,17 @@ void Display_Manual_Screen(int LED_Status) {  //Shows OLED screen in manual mode
   tft.setCursor(60,105);
   tft.print(LED_On_Time_string + "s");
 
-  delay(999);
+  //delay(999);
+  delay(100);
 }
 
-void printValues(int level, int aPin) {
+  void printValues(int level, int aPin) {
   delay(5);
-  int pot = 0;
-  if (aPin == 15) {
-    pot = 1;
-  }
-  Serial.print("level Pot");
-  Serial.print(pot);
-  Serial.print(": ");
-  Serial.print(level);
   Serial.print(" Spannung an A");
   Serial.print(pot);
   Serial.print(": ");
   double sl = analogRead(aPin);
   sl = sl * 5 / 1024;
-  //sl = sl * 5 / 512;
   Serial.print(sl);
   Serial.println(" Volt");
 }
@@ -701,7 +724,7 @@ void printValues(int level, int aPin) {
   int reading_Taste1_down = digitalRead(buttonPin_Taste1_down);
   int reading_Taste2_up = digitalRead(buttonPin_Taste2_up);
   int reading_Taste2_down = digitalRead(buttonPin_Taste2_down);
-  
+
 
   // check to see if you just pressed the button
   // (i.e. the input went from LOW to HIGH), and you've waited long enough
@@ -734,6 +757,7 @@ void printValues(int level, int aPin) {
 
   // Switch Taste1_up entprellen und bedienen
   // Folgende Funktion:
+  // A7: Einschaltzeit LED, Taste_1_up = 18, MCP4241:PW1
 
   if ((millis() - lastDebounceTime_Taste1_up) > debounceDelay) {
     // whatever the reading is at, it's been there for longer than the debounce
@@ -742,47 +766,48 @@ void printValues(int level, int aPin) {
     // if the button state has changed:
     if (reading_Taste1_up != buttonState_Taste1_up) {
       buttonState_Taste1_up = reading_Taste1_up;
-      
+
 
       if ((buttonState_Taste1_up == LOW)) {
         if (status_Taste1_up == 0) {
           Serial.println("Taste1_up");
           status_Taste1_up = 1;
-                    
+
           digitalWrite(slave_Select_Pin, LOW);
-          digitalWrite(write_protection, HIGH);
+          digitalWrite(write_protection, LOW);
           SPI.transfer(B00000000); //Volativer Wiper 0 write (CMD: 0x00)
           SPI.transfer(value_on);
-          digitalWrite(write_protection, LOW);
+          digitalWrite(write_protection, HIGH);
           digitalWrite(slave_Select_Pin, HIGH);
+          pot = 7;
           printValues(value_on, analogInPin7);
-          
+
         }
         else if (status_Taste1_up == 1)
         {
           value_on++;
           Serial.print(value_on);
-
           digitalWrite(slave_Select_Pin, LOW);
           SPI.transfer(B00000100); //Volatile Wiper 0 incrementieren (CMD: 0X00)
-         
-          digitalWrite(write_protection, HIGH);
+
+          digitalWrite(write_protection, LOW);
           SPI.transfer(B00100000); //NV Wiper 0 write
           SPI.transfer(value_on);
-          digitalWrite(write_protection, LOW);
+          digitalWrite(write_protection, HIGH);
 
           digitalWrite(slave_Select_Pin, HIGH);
+          pot = 7;
           printValues(value_on, analogInPin7);
 
           }
 
         if (value_on == 127) { value_on = 0; }
 
-        
+
       }
     }
   }
- 
+
 
   // Switch Taste1_down entprellen und bedienen
   // Folgende Funktion:
@@ -802,41 +827,44 @@ void printValues(int level, int aPin) {
           status_Taste1_up = 0;
           status_Taste1_down = 1;
           value_on--;
-                    
+
           digitalWrite(slave_Select_Pin, LOW);
-          digitalWrite(write_protection, HIGH);
+          digitalWrite(write_protection, LOW);
           SPI.transfer(B00000000); //Volativer Wiper 0 write (CMD: 0x00)
           SPI.transfer(value_on);
-          digitalWrite(write_protection, LOW);
+          digitalWrite(write_protection, HIGH);
           digitalWrite(slave_Select_Pin, HIGH);
+          pot = 7;
           printValues(level1, analogInPin7);
-          
+
         }
-     
+
         else if (status_Taste1_down == 1)
         {
           value_on--;
 
           digitalWrite(slave_Select_Pin, LOW);
           SPI.transfer(B00001000); //Volatile Wiper 0 decrementieren (CMD: 0X00)
-         
-          digitalWrite(write_protection, HIGH);
+
+          digitalWrite(write_protection, LOW);
           SPI.transfer(B00100000); //NV Wiper 0 write
           SPI.transfer(value_on);
-          digitalWrite(write_protection, LOW);
+          digitalWrite(write_protection, HIGH);
 
           digitalWrite(slave_Select_Pin, HIGH);
+          pot = 7;
           printValues(value_on, analogInPin7);
         }
-     
+
         if (value_on == 127) { value_on = 0; }  // Bedingungen bitte überprüfen
       }
     }
-  
-  
+
+
 
     // Switch Taste2_up entprellen und bedienen
     // Folgende Funktion:
+    // A8 Ausschaltzeit DEL, Taste_2_up: 3, MCP4241:PW0
 
     if ((millis() - lastDebounceTime_Taste2_up) > debounceDelay) {
       // whatever the reading is at, it's been there for longer than the debounce
@@ -852,13 +880,14 @@ void printValues(int level, int aPin) {
           status_Taste2_up = 1;
 
           digitalWrite(slave_Select_Pin, LOW);
-          digitalWrite(write_protection, HIGH);
+          digitalWrite(write_protection, LOW);
           SPI.transfer(B00010000); //Volativer Wiper 1 write (CMD: 0x00)
           SPI.transfer(value_off);
-          digitalWrite(write_protection, LOW);
+          digitalWrite(write_protection, HIGH);
           digitalWrite(slave_Select_Pin, HIGH);
+          pot = 8;
           printValues(value_off, analogInPin8);
-          
+
         }
         else if (status_Taste2_up == 1)
         {
@@ -868,25 +897,27 @@ void printValues(int level, int aPin) {
           digitalWrite(slave_Select_Pin, LOW);
           SPI.transfer(B00010100); //Volatile Wiper 1 incrementieren (CMD: 0X00)
 
-          digitalWrite(write_protection, HIGH);
+          digitalWrite(write_protection, LOW);
           SPI.transfer(B00110000); //NV Wiper 1 write
           SPI.transfer(value_off);
-          digitalWrite(write_protection, LOW);
+          digitalWrite(write_protection, HIGH);
 
           digitalWrite(slave_Select_Pin, HIGH);
+          pot = 8;
           printValues(value_off, analogInPin8);
 
         }
-        
+
         if (value_off == 127) { value_off = 0; }
 
-        
+
       }
      }
     }
 
     // Switch Taste2_down entprellen und bedienen
     // Folgende Funktion:
+    // A8 Ausschaltzeit DEL, Taste_2_down: 2, MCP4241:PW0
 
     if ((millis() - lastDebounceTime_Taste2_down) > debounceDelay) {
       // whatever the reading is at, it's been there for longer than the debounce
@@ -895,7 +926,7 @@ void printValues(int level, int aPin) {
       // if the button state has changed:
       if (reading_Taste2_down != buttonState_Taste2_down) {
         buttonState_Taste2_down = reading_Taste2_down;
-      
+
       if ((buttonState_Taste2_down == LOW)) {
        if ((status_Taste2_down == 0) && (value_on < 127 )) {
 
@@ -903,45 +934,47 @@ void printValues(int level, int aPin) {
           status_Taste2_up = 0;
           status_Taste2_down = 1;
           value_off--;
-                    
+
           digitalWrite(slave_Select_Pin, LOW);
-          digitalWrite(write_protection, HIGH);
+          digitalWrite(write_protection, LOW);
           SPI.transfer(B00010000); //Volativer Wiper 1 write (CMD: 0x00)
           SPI.transfer(value_off);
-          digitalWrite(write_protection, LOW);
+          digitalWrite(write_protection, HIGH);
           digitalWrite(slave_Select_Pin, HIGH);
+          pot = 8;
           printValues(level1, analogInPin8);
-          
-        } 
+
+        }
         else if (status_Taste2_down == 1)
         {
           value_off--;
 
           digitalWrite(slave_Select_Pin, LOW);
           SPI.transfer(B00011000); //Volatile Wiper 1 decrementieren (CMD: 0X00)
-         
-          digitalWrite(write_protection, HIGH);
+
+          digitalWrite(write_protection, LOW);
           SPI.transfer(B00110000); //NV Wiper 1 write
           SPI.transfer(value_off);
-          digitalWrite(write_protection, LOW);
+          digitalWrite(write_protection, HIGH);
 
           digitalWrite(slave_Select_Pin, HIGH);
-          printValues(value_off, analogInPin8);          
+          pot = 8;
+          printValues(value_off, analogInPin8);
         }
 
         if (value_off == 127) { value_off = 0; } // Bedingungen bitte überprüfen
-        
-       
+
+
       }
      }
     }
   }
-   
-   
+
+
   // save the reading. Next time through the loop, it'll be the lastButtonState:
   lastButtonState_Taste1_up = reading_Taste1_up;
   lastButtonState_Taste1_down = reading_Taste1_down;
   lastButtonState_Taste2_up = reading_Taste2_up;
   lastButtonState_Taste2_down = reading_Taste2_down;
-  
+
 }
